@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTheme } from 'styled-components';
+import axios from 'axios';
 import api from '../../../services/api';
 
 import { BackButton, Bullet, InputPassword, Button } from '../../../components';
@@ -47,36 +48,39 @@ export function SingUpSecondStep() {
   }
 
   async function handleRegister(): Promise<void> {
-    if (!password || !repeatPassword) {
-      return Alert.alert('Informe a senha e a confirmação.');
-    }
+    try {
+      if (!password || !repeatPassword) {
+        return Alert.alert('Informe a senha e a confirmação.');
+      }
 
-    if (password !== repeatPassword) {
-      return Alert.alert('As senhas não são iguais');
-    }
+      if (password !== repeatPassword) {
+        return Alert.alert('As senhas não são iguais');
+      }
 
-    await api
-      .post('/users', {
+      const response = await api.post('/users', {
         name: user.name,
         email: user.email,
         driver_license: user.driverLicense,
         password,
-      })
-      .then(() => {
+      });
+      if (response) {
         navigation.navigate('Confirmation', {
           nextScreenRoute: 'SingIn',
           title: 'Conta criada!',
           message: 'Agora é só fazer login\ne aproveitar',
         } as ConfirmationParams);
-      })
-      .catch(error => {
-        const ERROR = new Error(error);
-        console.log(ERROR.message);
-        Alert.alert('Opa!', 'Não foi possível efetuar o cadastro.');
-      });
-    return undefined;
+      }
+    } catch (error) {
+      console.error(
+        `handleRegister is Axios Error? ${axios.isAxiosError(error)}`,
+      );
+      if (axios.isAxiosError(error)) {
+        console.error('handleRegister', error.message);
+      }
+      console.error('handleRegister', error);
+      Alert.alert('Opa!', 'Não foi possível efetuar o cadastro.');
+    }
   }
-
   return (
     <KeyboardAvoidingView behavior="position" enabled>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

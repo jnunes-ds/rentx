@@ -45,7 +45,7 @@ export function MyCars() {
   useEffect(() => {
     async function fetchCars() {
       try {
-        const response = await api.get('/schedules_byuser?user_id=1');
+        const response = await api.get('/rentals');
 
         setCars(response.data);
       } catch (error) {

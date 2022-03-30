@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { StatusBar, Button } from 'react-native';
@@ -30,7 +31,7 @@ export function Home() {
   function handleCarDetails(car: CarDTO) {
     navigation.navigate('CarDetails', { car });
   }
-
+ 
   async function offlineSynchronize() {
     await synchronize({
       database,
