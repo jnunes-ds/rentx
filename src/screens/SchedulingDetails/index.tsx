@@ -6,6 +6,7 @@ import { useTheme } from 'styled-components';
 
 import { format } from 'date-fns';
 import { Alert } from 'react-native';
+import axios from 'axios';
 import { BackButton, ImageSlider, Accessory, Button } from '../../components';
 import { ConfirmationParams } from '../index';
 
@@ -38,6 +39,7 @@ import {
 } from './styles';
 import { getPlatformDate } from '../../utils/getPlatformDate';
 import api from '../../services/api';
+import { useAuth } from '~/hooks/auth';
 
 interface Params {
   car: CarDTO;
@@ -57,46 +59,65 @@ export function SchedulingDetails() {
   const theme = useTheme();
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const { car, dates } = route.params as Params;
 
   const rentTotal = Number(dates.length * Number(car.price));
 
   async function handleConfirm() {
     setLoading(true);
-    const schedulesByCar = await api.get(`/schedules_bycars/${car.id}`);
-
-    const unavailable_dates = [
-      ...schedulesByCar.data.unavailable_dates,
-      ...dates,
-    ];
-
-    await api.post('schedules_byuser', {
-      user_id: 1,
-      car,
-      startDate: format(getPlatformDate(new Date(dates[0])), 'dd/MM/yyyy'),
-      endDate: format(
-        getPlatformDate(new Date(dates[dates.length - 1])),
-        'dd/MM/yyyy',
-      ),
-    });
-
-    api
-      .put(`/schedules_bycars/${car.id}`, {
+    try {
+      const formattedDates = dates.map(item =>
+        format(getPlatformDate(new Date(item)), 'yyyy-MM-dd'),
+      );
+      const schedulesByCar = await api.get(`/rentals/car/${car.id}`, {
         id: car.id,
-        unavailable_dates,
-      })
-      .then(() => {
-        navigation.navigate('Confirmation', {
-          title: 'Carro alugado!',
-          message:
-            'Agora você só precisa ir\naté a concessionária da RENTX\npegar seu automóvel',
-          nextScreenRoute: 'Home',
-        } as ConfirmationParams);
-      })
-      .catch(() => {
-        setLoading(false);
-        Alert.alert('Não foi possível confirmar o agendamento');
+        unavailable_dates: formattedDates,
       });
+      console.log(car.id);
+      console.log('scheduleByCar');
+
+      if (schedulesByCar) {
+        const postData = {
+          user_id: user.id,
+          car_id: car.id,
+          start_date: format(getPlatformDate(new Date(dates[0])), 'yyyy-MM-dd'),
+          end_date: format(
+            getPlatformDate(new Date(dates[dates.length - 1])),
+            'yyyy-MM-dd',
+          ),
+          total: rentTotal,
+        };
+        console.log('postData', postData);
+        const unavailable_dates = [
+          ...schedulesByCar.data.unavailable_dates,
+          ...dates,
+        ];
+
+        await api.post('rentals', postData);
+
+        const response = await api.post(`/rentals/car/${car.id}`, {
+          id: car.id,
+          unavailable_dates,
+        });
+        if (response) {
+          navigation.navigate('Confirmation', {
+            title: 'Carro alugado!',
+            message:
+              'Agora você só precisa ir\naté a concessionária da RENTX\npegar seu automóvel',
+            nextScreenRoute: 'Home',
+          } as ConfirmationParams);
+        }
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('handleConfirm:', error.response?.data);
+      }
+      console.error(error);
+      Alert.alert('Não foi possível confirmar o agendamento');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleGoBack() {

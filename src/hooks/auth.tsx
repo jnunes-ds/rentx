@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from 'react';
+import axios from 'axios';
 import api from '../services/api';
 
 import { database } from '../database';
@@ -52,30 +53,35 @@ function AuthProvider({ children }: AuthProviderProps) {
 
   async function singIn({ email, password }: SingInCredentials) {
     try {
+      console.log(`
+        Email: ${email};
+        Password:${password};
+        Api: ${api.defaults.baseURL}
+      `);
       const response = await api.post('/sessions', { email, password });
+      if (response) {
+        const { token, user } = (await response.data) as ApiResponse;
 
-      const { token, user } = (await response.data) as ApiResponse;
+        api.defaults.headers.authorization = `Bearer ${token}`;
 
-      api.defaults.headers.authorization = `Bearer ${token}`;
+        const avatar = user.avatar != null ? user.avatar : '';
 
-      const avatar = user.avatar != null ? user.avatar : '';
-
-      const userCollection = await database.get<ModelUser>('users');
-      await database.write(async () => {
-        await userCollection.create(newUser => {
-          newUser.user_id = user.id;
-          newUser.name = user.name;
-          newUser.email = user.email;
-          newUser.driver_license = user.driver_license;
-          newUser.avatar = avatar;
-          newUser.token = token;
+        const userCollection = await database.get<ModelUser>('users');
+        await database.write(async () => {
+          await userCollection.create(newUser => {
+            newUser.user_id = user.id;
+            newUser.name = user.name;
+            newUser.email = user.email;
+            newUser.driver_license = user.driver_license;
+            newUser.avatar = avatar;
+            newUser.token = token;
+          });
         });
-      });
 
-      setData({ ...user, token });
+        setData({ ...user, token });
+      }
     } catch (error) {
-      const e = String(error);
-      throw new Error(e);
+      console.error(error);
     }
   }
 
