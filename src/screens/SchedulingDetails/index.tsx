@@ -74,8 +74,6 @@ export function SchedulingDetails() {
         id: car.id,
         unavailable_dates: formattedDates,
       });
-      console.log(car.id);
-      console.log('scheduleByCar');
 
       if (schedulesByCar) {
         const postData = {
@@ -88,18 +86,13 @@ export function SchedulingDetails() {
           ),
           total: rentTotal,
         };
-        console.log('postData', postData);
         const unavailable_dates = [
           ...schedulesByCar.data.unavailable_dates,
           ...dates,
         ];
 
-        await api.post('rentals', postData);
+        const response = await api.post('/rentals', postData);
 
-        const response = await api.post(`/rentals/car/${car.id}`, {
-          id: car.id,
-          unavailable_dates,
-        });
         if (response) {
           navigation.navigate('Confirmation', {
             title: 'Carro alugado!',
