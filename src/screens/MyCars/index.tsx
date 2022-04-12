@@ -7,6 +7,7 @@ import api from '../../services/api';
 import { CarDTO } from '../../dtos/CarDTO';
 
 import { BackButton, Car, LoadAnimation } from '../../components';
+import { useAuth } from '~/hooks/auth';
 
 import {
   Container,
@@ -37,6 +38,7 @@ export function MyCars() {
   const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const navigation = useNavigation();
+  const { user } = useAuth();
 
   function handleGoBack() {
     navigation.goBack();
@@ -45,7 +47,7 @@ export function MyCars() {
   useEffect(() => {
     async function fetchCars() {
       try {
-        const response = await api.get('/schedules_byuser?user_id=1');
+        const response = await api.get(`/rentals`);
 
         setCars(response.data);
       } catch (error) {
